@@ -1,0 +1,220 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+plugins {
+  // Bump up version to 0.9.1 in order for generateAvro task to work with Gradle 5
+  id "com.commercehub.gradle.plugin.avro-base" version "0.9.1"
+}
+
+apply plugin: 'java'
+apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: "com.commercehub.gradle.plugin.avro-base"
+
+avro {
+  stringType = "string"
+}
+
+task generateAvro(type: com.commercehub.gradle.plugin.avro.GenerateAvroJavaTask) {
+  source("src/main/avro")
+  outputDir = file("src/main/gen-java")
+}
+
+compileJava {
+  dependsOn tasks.generateAvro
+}
+
+dependencies {
+  compile project(":gobblin-api")
+  compile project(":gobblin-core")
+  compile project(":gobblin-core-base")
+  compile project(":gobblin-hive-registration")
+  compile project(":gobblin-metrics-libs:gobblin-metrics")
+  compile project(":gobblin-metastore")
+  compile project(":gobblin-utility")
+  compile project(path: ':gobblin-rest-service:gobblin-rest-api', configuration: 'restClient')
+  compile project(path: ':gobblin-rest-service:gobblin-rest-api', configuration: 'dataTemplate')
+  compile project(path: ':gobblin-restli:gobblin-flow-config-service:gobblin-flow-config-service-api', configuration: 'restClient')
+  compile project(path: ':gobblin-restli:gobblin-flow-config-service:gobblin-flow-config-service-api', configuration: 'dataTemplate')
+  compile project(":gobblin-rest-service:gobblin-rest-server")
+  compile project(":gobblin-modules:google-ingestion")
+
+  compile externalDependency.avro
+  compile externalDependency.avroMapredH2
+  compile externalDependency.calciteCore
+  //compile externalDependency.calciteAvatica
+  compile externalDependency.commonsCli
+  compile externalDependency.commonsCollections4
+  compile externalDependency.commonsConfiguration
+  compile externalDependency.commonsEmail
+  compile externalDependency.commonsLang
+  compile externalDependency.commonsLang3
+  compile externalDependency.commonsIo
+  compile externalDependency.curatorFramework
+  compile externalDependency.curatorClient
+  compile externalDependency.curatorRecipes
+  compile externalDependency.findBugsAnnotations
+  compile externalDependency.gson
+  compile externalDependency.gsonJavatimeSerialisers
+  compile externalDependency.guava
+  compile externalDependency.guice
+  compile externalDependency.httpclient
+  compile externalDependency.httpcore
+  compile externalDependency.jacksonCore
+  compile externalDependency.jacksonMapper
+  compile externalDependency.jacksonMapperAsl
+  compile externalDependency.javaxInject
+  compile externalDependency.jodaTime
+  compile externalDependency.metricsCore
+  compile externalDependency.metricsJvm
+  compile externalDependency.metricsJmx
+  compile externalDependency.mockito
+  compile externalDependency.pegasus.data
+  compile externalDependency.quartz
+  compile externalDependency.slf4j
+  compile externalDependency.typesafeConfig
+  compile externalDependency.guavaretrying
+  compile externalDependency.hiveExec
+  compile externalDependency.parquet
+  compile externalDependency.kryo
+
+  testCompile project(path: ":gobblin-metastore", configuration: "testFixtures")
+  testCompile externalDependency.jhyde
+  testCompile externalDependency.testng
+  testCompile externalDependency.hamcrest
+  testCompile externalDependency.byteman
+  testCompile externalDependency.bytemanBmunit
+  testCompile externalDependency.curatorClient
+  testCompile externalDependency.curatorTest
+  testCompile externalDependency.mockito
+  testRuntime externalDependency.derby
+  testCompile externalDependency.jmh
+}
+
+// Begin HACK to get around POM being depenendent on the (empty) gobblin-rest-api instead of gobblin-rest-api-rest-client
+def installer = install.repositories.mavenInstaller
+
+[installer]*.pom*.whenConfigured {pom ->
+  def it = pom.dependencies
+  def s = it.find {dep -> dep.groupId == project.group && dep.artifactId == 'gobblin-rest-api' }
+  if (s != null) {
+    def t = s.clone()
+    t.artifactId = 'gobblin-rest-api-data-template'
+    it.add(t)
+    s.artifactId = 'gobblin-rest-api-rest-client'
+  }
+}
+
+if (rootProject.publishToMaven || rootProject.publishToNexus) {
+    def deployer = uploadArchives.repositories.mavenDeployer
+    [deployer]*.pom*.whenConfigured {pom ->
+      def it = pom.dependencies
+      def s = it.find {dep -> dep.groupId == project.group && dep.artifactId == 'gobblin-rest-api' }
+      if (s != null) {
+        def t = s.clone()
+        t.artifactId = 'gobblin-rest-api-data-template'
+        it.add(t)
+        s.artifactId = 'gobblin-rest-api-rest-client'
+      }
+    }
+}
+// End HACK
+
+task testJar(type: Jar, dependsOn: testClasses) {
+    baseName = "test-${project.archivesBaseName}"
+    from sourceSets.test.output
+}
+
+configurations {
+    tests
+}
+
+configurations {
+    compile {
+        transitive = false
+    }
+}
+
+sourceSets {
+  main {
+    java {
+      srcDir 'src/main/gen-java'
+    }
+    resources {
+      srcDir 'src/main/avro'
+    }
+  }
+}
+
+artifacts {
+    tests testJar
+}
+
+jmh {
+    include = ""
+    zip64 = true
+    duplicateClassesStrategy = "EXCLUDE"
+}
+
+test {
+    systemProperty "org.jboss.byteman.verbose", "true"
+    workingDir rootProject.rootDir
+    maxParallelForks = 1
+}
+
+clean {
+  delete "../gobblin-test/locks"
+  delete "../gobblin-test/basicTest"
+}
+
+ext.classification="library"
+/**
+ * Converts old style pull files into *.conf with templates
+ *
+ * Usage:
+ * ./gradlew :gobblin-runtime:pullFileConverter -PpullFilesRootPath=... -PpullFilesToConvertGlob=... -PtemplatePath=...
+ *           -PsysConfigPath=... -PoutputDir=...
+ */
+task pullFileConverter(type: JavaExec) {
+  dependsOn jar
+  doFirst {
+    main = "org.apache.gobblin.runtime.template.PullFileToConfigConverter"
+
+    def pullFilesRootPath = "pullFilesRootPath"
+    def pullFilesToConvertGlob = "pullFilesToConvertGlob"
+    def templatePath = "templatePath"
+    def sysConfigPath = "sysConfigPath"
+    def outputDir = "outputDir"
+
+    def props = [pullFilesRootPath, pullFilesToConvertGlob, templatePath, sysConfigPath, outputDir]
+
+    for (prop in props) {
+      if (!project.hasProperty(prop)) {
+        throw new RuntimeException("Missing property " + prop)
+      }
+    }
+
+    def templateFile = file(project.property(templatePath))
+    def templateClasspath = templateFile.getParent()
+
+    classpath = files(sourceSets.main.runtimeClasspath, templateClasspath)
+    args = [project.property(pullFilesRootPath), project.property(pullFilesToConvertGlob),
+            "resource:///" + templateFile.getName(),
+            project.property(sysConfigPath), project.property(outputDir)]
+  }
+
+}
+// Ignore the generated java code and avro residing in main
+checkstyleMain.source = "src/main/java"

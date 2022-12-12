@@ -1,0 +1,75 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'pegasus'
+apply plugin: 'java'
+
+ext.apiProject = project(':gobblin-rest-service:gobblin-rest-api')
+
+pegasus.main.idlOptions.addIdlItem(['gobblin.rest'])
+
+dependencies {
+    compile project(path: ":gobblin-rest-service:gobblin-rest-api", configuration: "dataTemplate")
+    compile project(":gobblin-rest-service:gobblin-rest-client")
+    compile project(":gobblin-metastore")
+    testCompile project(path: ":gobblin-metastore", configuration: "testFixtures")
+
+    compile externalDependency.pegasus.d2
+    compile externalDependency.pegasus.restliCommon
+    compile externalDependency.pegasus.restliServer
+    compile externalDependency.pegasus.restliNettyStandalone
+    compile externalDependency.guava
+    compile externalDependency.javaxInject
+
+    testCompile externalDependency.testng
+}
+
+// Begin HACK to get around POM being depenendent on the (empty) gobblin-rest-api instead of gobblin-rest-api-data-template
+def installer = install.repositories.mavenInstaller
+[installer]*.pom*.whenConfigured {pom ->
+    pom.dependencies.find {dep -> dep.groupId == project.group && dep.artifactId == 'gobblin-rest-api' }.artifactId = 'gobblin-rest-api-data-template'
+}
+if (rootProject.publishToMaven || rootProject.publishToNexus) {
+    def deployer = uploadArchives.repositories.mavenDeployer
+    [deployer]*.pom*.whenConfigured {pom ->
+        pom.dependencies.find {dep -> dep.groupId == project.group && dep.artifactId == 'gobblin-rest-api' }.artifactId = 'gobblin-rest-api-data-template'
+    }
+}
+// End HACK
+
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+        maven {
+            url "https://linkedin.jfrog.io/artifactory/open-source/"
+        }
+    }
+
+    dependencies {
+        classpath group: 'com.linkedin.pegasus', name: 'gradle-plugins', version: pegasusVersion
+    }
+}
+
+test {
+    workingDir rootProject.rootDir
+}
+
+task compileTest(dependsOn: ['compileTestGeneratedDataTemplateJava', 'compileTestJava']) {
+    doLast{}
+}
+

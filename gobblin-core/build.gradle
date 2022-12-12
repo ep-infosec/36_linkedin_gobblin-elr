@@ -1,0 +1,91 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java'
+
+dependencies {
+  compile project(":gobblin-api")
+  compile project(":gobblin-tunnel")
+  compile project(":gobblin-utility")
+  compile project(":gobblin-metastore")
+  compile project(":gobblin-core-base")
+  compile project(":gobblin-metrics-libs:gobblin-metrics")
+  compile project(":gobblin-modules:gobblin-avro-json")
+  compile project(":gobblin-modules:gobblin-metadata")
+  compile project(":gobblin-hive-registration")
+  compile project(":gobblin-config-management:gobblin-config-client")
+  compile project(":gobblin-config-management:gobblin-config-core")
+
+  compile externalDependency.avroMapredH2
+  compile externalDependency.commonsCodec
+  compile externalDependency.commonsMath
+  compile externalDependency.commonsHttpClient
+  compile externalDependency.avro
+  compile externalDependency.avroCompatHelper
+  compile externalDependency.guava
+  compile externalDependency.gson
+  compile externalDependency.slf4j
+  compile externalDependency.jodaTime
+  compile externalDependency.jacksonCore
+  compile externalDependency.jacksonMapper
+  compile externalDependency.jsch
+  compile externalDependency.commonsLang3
+  compile externalDependency.commonsIo
+  compile externalDependency.hikariCP
+  compile externalDependency.hiveExec
+  compile externalDependency.hiveSerDe
+  compile externalDependency.httpclient
+  compile externalDependency.httpasyncclient
+  compile externalDependency.httpcore
+  compile externalDependency.metricsCore
+  compile externalDependency.typesafeConfig
+  compile externalDependency.findBugsAnnotations
+  compile externalDependency.oltu
+  compile externalDependency.opencsv
+  compile externalDependency.hadoopHdfs
+  runtimeOnly externalDependency.protobuf
+
+  testRuntime externalDependency.hadoopAws
+  testCompile externalDependency.calciteCore
+  testCompile externalDependency.calciteAvatica
+  testCompile externalDependency.jhyde
+  testCompile externalDependency.jsonAssert
+  testCompile externalDependency.testng
+  testCompile externalDependency.mockito
+  testCompile externalDependency.mockRunnerJdbc
+  testCompile externalDependency.httpcore
+  testCompile externalDependency.httpclient
+  testCompile project(":gobblin-test-utils")
+}
+
+apply from: "${rootProject.rootDir}/gobblin-flavored-build.gradle"
+
+configurations {
+  compile { transitive = false }
+  // Remove xerces dependencies because of versioning issues. Standard JRE implementation should
+  // work. See also http://stackoverflow.com/questions/11677572/dealing-with-xerces-hell-in-java-maven
+  // HADOOP-5254 and MAPREDUCE-5664
+  all*.exclude group: 'xml-apis'
+  all*.exclude group: 'xerces'
+  all*.exclude group: "org.pentaho"
+}
+
+test {
+  workingDir rootProject.rootDir
+}
+
+ext.classification="library"

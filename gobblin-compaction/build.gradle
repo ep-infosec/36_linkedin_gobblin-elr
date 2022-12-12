@@ -1,0 +1,69 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+dependencies {
+  compile project(":gobblin-api")
+  compile project(":gobblin-utility")
+  compile project(":gobblin-metrics-libs:gobblin-metrics")
+  compile project(":gobblin-core")
+  compile project(":gobblin-data-management")
+  compile project(":gobblin-iceberg")
+  compile project(":gobblin-runtime")
+  compile project(":gobblin-modules:gobblin-kafka-common")
+  compile externalDependency.orcMapreduce
+  compile externalDependency.orcCore
+
+  compile externalDependency.orcTools
+  compile externalDependency.calciteCore
+  compile externalDependency.jhyde
+  compile externalDependency.avro
+  compile externalDependency.commonsLang
+  compile externalDependency.commonsMath
+  compile externalDependency.mockito
+  compile externalDependency.testng
+
+  runtimeOnly externalDependency.hadoopCommon
+  runtimeOnly externalDependency.hadoopClientCore
+  runtimeOnly externalDependency.hadoopHdfs
+  runtimeOnly externalDependency.hadoopAuth
+
+  runtimeOnly(externalDependency.hiveService) {
+    exclude group: 'org.apache.hive', module: 'hive-exec'
+    exclude group: 'com.linkedin.hive', module: 'hive-exec'
+  }
+  runtimeOnly externalDependency.hiveJdbc
+  runtimeOnly externalDependency.hiveMetastore
+  runtimeOnly externalDependency.antlrRuntime
+  runtimeOnly externalDependency.derby
+  runtimeOnly externalDependency.jdo2
+  runtimeOnly externalDependency.datanucleusCore
+  runtimeOnly externalDependency.datanucleusRdbms
+
+  testCompile externalDependency.testng
+  testCompile externalDependency.calciteAvatica
+}
+
+
+configurations {
+  compile { transitive = true }
+  all*.exclude group: "org.apache.hadoop", module: 'hive-exec'
+}
+
+ext.classification="library"

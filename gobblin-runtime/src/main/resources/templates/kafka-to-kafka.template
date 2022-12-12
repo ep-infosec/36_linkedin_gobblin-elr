@@ -1,0 +1,51 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Template for transferring data from one kafka topic to another
+# Records are copied directly as byte arrays, additional converters can be used to interpret the records and perform
+# transformations.
+# Required attributes: inputTopics (comma separated topics to consume), outputTopic (single topic where all records
+#                      will be written), job.name (name of the job)
+
+gobblin.template.required_attributes="inputTopics,outputTopic,job.name"
+
+job.group=GobblinKafka
+job.description=Gobblin quick start job for Kafka
+job.lock.enabled=true
+
+kafka.brokers=${inputBrokers}
+
+source.class=org.apache.gobblin.source.extractor.extract.kafka.UniversalKafkaSource
+gobblin.source.kafka.extractorType=DESERIALIZER
+kafka.deserializer.type=BYTE_ARRAY
+
+extract.namespace=org.apache.gobblin.extract.kafka
+
+bootstrap.with.offset=latest
+
+topic.whitelist=${inputTopics}
+
+writer.builder.class=org.apache.gobblin.kafka.writer.KafkaDataWriterBuilder
+writer.kafka.topic=${outputTopic}
+writer.kafka.producerConfig.bootstrap.servers=${outputBrokers}
+
+writer.kafka.producerConfig.value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer
+writer.output.format=TEXT
+data.publisher.type=org.apache.gobblin.publisher.NoopPublisher
+
+inputBrokers="localhost:9092"
+outputBrokers="localhost:9092"

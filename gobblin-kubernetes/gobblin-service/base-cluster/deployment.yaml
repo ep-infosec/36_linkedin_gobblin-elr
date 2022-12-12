@@ -1,0 +1,70 @@
+# In the future, build the kubernetes cluster from the official docker account
+# Also ensure that proper tagging/versioning is done i.e. remove :latest tag and instead use the digest of the container
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 'gaas-deployment'
+  labels:
+    app: gaas-deployment
+spec:
+  selector:
+    matchLabels:
+      app: gaas
+  replicas: 1
+  template:
+    metadata:
+      name: 'gaas'
+      labels:
+        app: gaas
+    spec:
+      volumes:
+        - name: 'shared-jobs'
+          persistentVolumeClaim:
+            claimName: shared-jobs-claim
+        - name: flowconfig-templates
+          configMap:
+            name: flowconfig-templates
+      containers:
+        - name: gobblin-service
+          image: apache/gobblin:latest
+          args: ["--mode", "gobblin-as-service", "--jvmopts", "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"]
+          volumeMounts:
+            - name: shared-jobs
+              mountPath: /etc/gobblin-as-service/jobs
+            - name: flowconfig-templates
+              mountPath: /etc/templateCatalog
+          imagePullPolicy: Never # TODO: Remove this once docker images are deployed to Apache DockerHub post-graduation
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 'gobblin-standalone-deployment'
+  labels:
+    app: gobblin-standalone-deployment
+spec:
+  selector:
+    matchLabels:
+      app: gobblin-standalone
+  replicas: 1
+  template:
+    metadata:
+      name: 'gobblin-standalone'
+      labels:
+        app: gobblin-standalone
+    spec:
+      volumes:
+        - name: 'shared-jobs'
+          persistentVolumeClaim:
+            claimName: shared-jobs-claim
+      containers:
+        - name: gobblin-standalone
+          image: apache/gobblin:latest
+          args: ["--mode", "standalone", "--jvmopts", "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"]
+          volumeMounts:
+            - name: shared-jobs
+              mountPath: /etc/gobblin-standalone/jobs
+          env:
+            - name: GOBBLIN_JOB_CONFIG_DIR
+              value: /etc/gobblin-standalone/jobs
+          imagePullPolicy: Never # TODO: Remove this once docker images are deployed to Apache DockerHub post-graduation

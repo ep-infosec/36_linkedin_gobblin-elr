@@ -1,0 +1,156 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'pegasus'
+apply plugin: 'java'
+
+dependencies {
+    dataModel externalDependency.pegasus.restliCommon
+    compile externalDependency.pegasus.data
+    compile externalDependency.pegasus.restliClient
+    compile externalDependency.pegasus.restliCommon
+    compile externalDependency.pegasus.pegasusCommon
+}
+
+artifacts {
+  archives mainRestClientJar
+  archives mainDataTemplateJar
+}
+
+if (rootProject.ext.publishToMaven || rootProject.ext.publishToNexus) {
+  configure(uploadArchives.repositories.mavenDeployer) {
+    addFilter('gobblin-rest-api-rest-client') {artifact, file ->
+      artifact.name == 'gobblin-rest-api-rest-client'
+    }.project(rootProject.pomAttributes).artifactId = 'gobblin-rest-api-rest-client'
+
+    addFilter('gobblin-rest-api-data-template') {artifact, file ->
+      artifact.name == 'gobblin-rest-api-data-template'
+    }.project(rootProject.pomAttributes).artifactId = 'gobblin-rest-api-data-template'
+
+    addFilter('gobblin-rest-api') {artifact, file ->
+      artifact.name == 'gobblin-rest-api'
+    }.project(rootProject.pomAttributes).artifactId = 'gobblin-rest-api'
+    // artifact names for 'data-model', 'avro-schema' and 'rest-model' may be added as well if needed
+  }
+}
+
+configure(install.repositories.mavenInstaller) {
+  addFilter('gobblin-rest-api-rest-client') {artifact, file ->
+    artifact.name == 'gobblin-rest-api-rest-client'
+  }.project(rootProject.pomAttributes).artifactId = 'gobblin-rest-api-rest-client'
+
+  addFilter('gobblin-rest-api-data-template') {artifact, file ->
+    artifact.name == 'gobblin-rest-api-data-template'
+  }.project(rootProject.pomAttributes).artifactId = 'gobblin-rest-api-data-template'
+
+  addFilter('gobblin-rest-api') {artifact, file ->
+    artifact.name == 'gobblin-rest-api'
+  }.project(rootProject.pomAttributes).artifactId = 'gobblin-rest-api'
+  // artifact names for 'data-model', 'avro-schema' and 'rest-model' may be added as well if needed
+}
+
+// Configure sources and javadoc jars for the data template library
+def dataTemplateName = project.name + "-data-template"
+
+task dataTemplateSourcesJar(type: Jar, dependsOn: classes) {
+    from sourceSets.mainGeneratedDataTemplate.allSource
+    classifier = 'sources'
+    baseName = dataTemplateName
+}
+
+task dataTemplateJavadoc(type: Javadoc, dependsOn: classes) {
+    source sourceSets.mainGeneratedDataTemplate.allSource
+    classpath = files(sourceSets.mainGeneratedDataTemplate.compileClasspath)
+    destinationDir file("${rootProject.buildDir}/${dataTemplateName}/docs/javadoc")
+}
+//javadoc.dependsOn dataTemplateJavadoc
+
+task dataTemplateJavadocJar(type: Jar, dependsOn: 'dataTemplateJavadoc') {
+    from dataTemplateJavadoc
+    baseName = dataTemplateName
+    classifier = 'javadoc'
+}
+
+
+// Configure sources and javadoc jars for the rest client  library
+def restClientName = project.name + "-rest-client"
+
+task restClientSourcesJar(type: Jar, dependsOn: classes) {
+    from sourceSets.mainGeneratedRest.allSource
+    classifier = 'sources'
+    baseName = restClientName
+}
+
+task restClientJavadoc(type: Javadoc, dependsOn: classes) {
+    source sourceSets.mainGeneratedRest.allSource
+    classpath = files(sourceSets.mainGeneratedRest.compileClasspath)
+    destinationDir file("${rootProject.buildDir}/${restClientName}/docs/javadoc")
+}
+//javadoc.dependsOn dataTemplateJavadoc
+
+task restClientJavadocJar(type: Jar, dependsOn: 'restClientJavadoc') {
+    from restClientJavadoc
+    baseName = restClientName
+    classifier = 'javadoc'
+}
+
+artifacts {
+    archives dataTemplateSourcesJar, dataTemplateJavadocJar, restClientSourcesJar, restClientJavadocJar
+}
+
+publishing.publications {
+    dataTemplate(MavenPublication) {
+      artifactId dataTemplateName
+      artifacts = [mainDataTemplateJar, dataTemplateSourcesJar, dataTemplateJavadocJar]
+      pom pomAttributes
+      pom.withXml addRuntimeDependenciesToPom
+    }
+    restClient(MavenPublication) {
+      artifactId restClientName
+      artifacts = [mainRestClientJar, restClientSourcesJar, restClientJavadocJar]
+      pom pomAttributes
+      pom.withXml addRuntimeDependenciesToPom
+    }
+}
+artifactory {
+    contextUrl = 'https://linkedin.jfrog.io/artifactory/'
+    publish {
+        defaults {
+            publications ('mavenJava', 'restClient', 'dataTemplate')
+        }
+    }
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+        maven {
+            url "https://linkedin.jfrog.io/artifactory/open-source"
+        }
+    }
+
+    dependencies {
+        classpath group: 'com.linkedin.pegasus', name: 'gradle-plugins', version: pegasusVersion
+    }
+}
+
+task compileTest(dependsOn: ['compileTestGeneratedDataTemplateJava', 'compileTestJava']){
+    doLast {
+    }
+}
+

@@ -1,0 +1,75 @@
+{
+  "name" : "flowexecutions",
+  "namespace" : "org.apache.gobblin.service",
+  "path" : "/flowexecutions",
+  "schema" : "org.apache.gobblin.service.FlowExecution",
+  "doc" : "Resource for handling flow execution requests\n\ngenerated from: org.apache.gobblin.service.FlowExecutionResource",
+  "collection" : {
+    "identifier" : {
+      "name" : "id",
+      "type" : "org.apache.gobblin.service.FlowStatusId",
+      "params" : "com.linkedin.restli.common.EmptyRecord"
+    },
+    "supports" : [ "delete", "get" ],
+    "methods" : [ {
+      "method" : "get",
+      "doc" : "Retrieve the FlowExecution with the given key"
+    }, {
+      "method" : "delete",
+      "doc" : "Kill the FlowExecution with the given key"
+    } ],
+    "finders" : [ {
+      "name" : "latestFlowExecution",
+      "doc" : "Retrieve the most recent matching FlowExecution(s) of the identified FlowId",
+      "parameters" : [ {
+        "name" : "flowId",
+        "type" : "org.apache.gobblin.service.FlowId"
+      }, {
+        "name" : "count",
+        "type" : "int",
+        "optional" : true
+      }, {
+        "name" : "tag",
+        "type" : "string",
+        "optional" : true
+      }, {
+        "name" : "executionStatus",
+        "type" : "string",
+        "optional" : true
+      }, {
+        "name" : "includeIssues",
+        "type" : "boolean",
+        "default" : "false",
+        "doc" : "include job issues in the response. Otherwise empty array of issues will be returned."
+      } ]
+    }, {
+      "name" : "latestFlowGroupExecutions",
+      "doc" : "Retrieve the most recent matching FlowExecution(s) for each flow in the identified flowGroup",
+      "parameters" : [ {
+        "name" : "flowGroup",
+        "type" : "string"
+      }, {
+        "name" : "countPerFlow",
+        "type" : "int",
+        "optional" : true,
+        "doc" : "(maximum) number of FlowExecutions for each flow in flowGroup   *"
+      }, {
+        "name" : "tag",
+        "type" : "string",
+        "optional" : true
+      }, {
+        "name" : "includeIssues",
+        "type" : "boolean",
+        "default" : "false",
+        "doc" : "include job issues in the response. Otherwise empty array of issues will be returned."
+      } ]
+    } ],
+    "entity" : {
+      "path" : "/flowexecutions/{id}",
+      "actions" : [ {
+        "name" : "resume",
+        "doc" : "Resume a failed {@link FlowExecution} from the point before failure."
+      } ]
+    }
+  }
+}

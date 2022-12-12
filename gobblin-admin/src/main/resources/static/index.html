@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<html lang="en">
+  <head>
+    <link rel="icon" type="image/png" href="img/gobblin_icon_small.png">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gobblin Admin</title>
+
+    <link rel="stylesheet" href="css/tablesorter.theme.css">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/gobblin.css" rel="stylesheet">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet' type='text/css'>
+
+  </head>
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-main-menu"
+                  aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">
+            <img src="img/gobblin_logo_white.png" alt="Gobblin" height="40px" width="auto" />
+          </a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="navbar-main-menu">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">Jobs <span class="sr-only">(current)</span></a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div id="main-content" class="container-fluid">
+    </div>
+
+    <script type="text/template" id="main-template">
+      <div id="header-container"></div>
+      <div id="content-container" class="container-fluid"></div>
+    </script>
+
+    <script type="text/template" id="header-template">
+      <div id="header-panel" class="<%= (header.highlightClass) ? 'highlight highlight-' + header.highlightClass : 'highlight-default' %>">
+        <h1 id="page-title"><%= header.title %></h1>
+        <% if (header.subtitle) { %>
+          <h4 id="page-subtitle"><%= header.subtitle %></h1>
+        <% } %>
+      </div>
+    </script>
+
+    <script type="text/template" id="list-all-template">
+      <div id="list-all-table-container" class="container-fluid">
+        <div id="table-control-container"></div>
+        <br />
+        <div id="table-container"></div>
+      </div>
+    </script>
+
+    <script type="text/template" id="chart-template">
+      <h4 class="chart-title"><%= title %></h4>
+      <canvas class="chart-canvas" height="<%= height %>" width="<%= width %>"></canvas>
+    </script>
+
+    <script type="text/template" id="summary-template">
+      <h4 class="chart-title"><%= title %></h4>
+      <table class="summary-table <%= (center !== 'undefined' && center == true) ? 'key-value-centered' : '' %>">
+        <% for(var key in pairs) { %>
+        <tr>
+          <td><%= key %></td>
+          <td><%= pairs[key] %></td>
+        </tr>
+        <% } %>
+      </table>
+    </script>
+
+    <script type="text/template" id="key-value-table-body-template">
+      <% for(var key in data) { %>
+      <tr>
+        <td><%= key %></td>
+        <td><div><%= data[key] %></div></td>
+      </tr>
+      <% } %>
+    </script>
+    <script type="text/template" id="key-value-table-template">
+      <h4 class="chart-title"><%= title %></h4>
+      <table id="key-value-table" class="table tablesorter key-value-table <%= (center !== 'undefined' && center == true) ? 'key-value-centered' : '' %>">
+        <thead>
+          <tr>
+            <th class="sortInitialOrder-asc filter-match">name</th>
+            <th>value</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+      <div id="key-value-table-pager" class="pager">
+        <form>
+          <div class="first"></div>
+          <div class="prev"></div>
+          <span class="pagedisplay" data-pager-output-filtered="{startRow:input} &ndash; {endRow} / {filteredRows} of {totalRows} total rows"></span>
+          <div class="next"></div>
+          <div class="last"></div>
+          <select class="pagesize">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+            <option value="all">All Rows</option>
+          </select>
+        </form>
+      </div>
+    </script>
+
+    <script type="text/template" id="job-template">
+      <h3 class="section-title">JOB SUMMARY</h3>
+      <div id="job-summary" class="summary">
+        <div id="duration-chart" class="chart-container col-md-4"></div>
+        <div id="records-chart" class="chart-container col-md-4"></div>
+        <div id="status-key-value" class="col-md-4"></div>
+      </div>
+      <div class="clearfix"></div>
+      <h3 class="section-title">JOB EXECUTIONS</h3>
+      <div id="job-table-container">
+        <div id="table-control-container"></div>
+        <br />
+        <div id="table-container"></div>
+      </div>
+    </script>
+
+    <script type="text/template" id="job-execution-template">
+      <h3 class="section-title">JOB EXECUTION SUMMARY</h3>
+      <div id="important-key-value" class="col-md-8"></div>
+      <div id="modal-links" class="col-md-2">
+        <p><a data-toggle="collapse" href="#job-properties-key-value" aria-expanded="false">View Job Properties</a></p>
+        <p><a data-toggle="collapse" href="#job-metrics-key-value" aria-expanded="false">View Metrics</a></p>
+      </div>
+      <div class="clearfix"></div>
+      <div id="job-properties-key-value" class="collapse">
+        <div id="key-value-table-container"></div>
+      </div>
+      <div id="job-metrics-key-value" class="collapse">
+        <div id="key-value-table-container"></div>
+      </div>
+      <div class="clearfix"></div>
+      <h3 class="section-title">TASK EXECUTIONS</h3>
+      <div id="task-table-container">
+        <div id="table-control-container"></div>
+        <br />
+        <div id="table-container"></div>
+      </div>
+    </script>
+
+    <script type="text/template" id="table-control-template">
+      <form class="form-inline">
+        <div class="form-group">
+          <label for="results-limit">Limit</label>
+          <input type="text" class="form-control" id="results-limit" placeholder="<%= resultsLimit %>">
+        </div>
+        <% if (includeJobToggle) { %>
+          <div class="btn-group" data-toggle="buttons" id="list-jobs-toggle">
+            <label class="btn btn-default active">
+              <input type="radio" value="DISTINCT" /> All Jobs
+            </label>
+            <label class="btn btn-default">
+              <input type="radio" value="RECENT" /> Most Recent
+            </label>
+          </div>
+        <% } %>
+        <% if (includeJobsWithTasksToggle) { %>
+          <div class="btn-group" data-toggle="buttons" id="list-jobs-with-tasks-toggle">
+            <label class="btn btn-default <%= (hideJobsWithoutTasksByDefault === 'undefined' || hideJobsWithoutTasksByDefault == false) ? 'active' : '' %>">
+              <input type="radio" value="ALL" /> All Jobs
+            </label>
+            <label class="btn btn-default <%= (hideJobsWithoutTasksByDefault !== 'undefined' && hideJobsWithoutTasksByDefault == true) ? 'active' : '' %>">
+              <input type="radio" value="WITH_TASKS" /> With Tasks
+            </label>
+          </div>
+        <% } %>
+        <button type="button" id="query-btn" class="btn btn-info pull-right">Update!</button>
+      </form>
+    </script>
+    <script type="text/template" id="table-body-template">
+      <% for(var r in data) { %>
+      <tr>
+        <% for(var c in data[r]) { %>
+        <td><%= data[r][c] %></td>
+        <% } %>
+      </tr>
+      <% } %>
+    </script>
+    <script type="text/template" id="table-template">
+      <div class="narrow-block wrapper">
+      <table id="jobs-table" class="table tablesorter">
+        <thead><tr>
+          <% for(var i in columnHeaders) { %>
+            <th class="filter-match"><%= columnHeaders[i].name %></th>
+          <% } %>
+        </tr></thead>
+        <tbody>
+        </tbody>
+      </table>
+      <div id="jobs-table-pager" class="pager">
+        <form>
+          <div class="first"></div>
+          <div class="prev"></div>
+          <span class="pagedisplay" data-pager-output-filtered="{startRow:input} &ndash; {endRow} / {filteredRows} of {totalRows} total rows"></span>
+          <div class="next"></div>
+          <div class="last"></div>
+          <select class="pagesize">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+            <option value="all">All Rows</option>
+          </select>
+        </form>
+      </div>
+    </script>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.10/js/jquery.tablesorter.combined.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.10/js/extras/jquery.tablesorter.pager.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.10/js/jquery.tablesorter.widgets.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.10/js/extras/jquery.metadata.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.3.3/backbone-min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.bundle.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript" src="js/gobblin.js"></script>
+    <script type="text/javascript" src="js/settings.js"></script>
+    <script type="text/javascript" src="js/models/task-execution.js"></script>
+    <script type="text/javascript" src="js/models/job-execution.js"></script>
+    <script type="text/javascript" src="js/collections/job-executions.js"></script>
+    <script type="text/javascript" src="js/views/table-view.js"></script>
+    <script type="text/javascript" src="js/views/key-value-table-view.js"></script>
+    <script type="text/javascript" src="js/views/job-execution-view.js"></script>
+    <script type="text/javascript" src="js/views/job-view.js"></script>
+    <script type="text/javascript" src="js/views/over-view.js"></script>
+    <script type="text/javascript" src="js/router.js"></script>
+  </body>
+</html>

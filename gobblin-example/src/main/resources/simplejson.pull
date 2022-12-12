@@ -1,0 +1,54 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+#########################################################################
+###################### Demo job configuration file ######################
+#########################################################################
+
+job.name=GobblinDemo
+job.group=demo
+job.description=A Gobblin job for demo purpose
+
+source.class=org.apache.gobblin.example.simplejson.SimpleJsonSource
+converter.classes=org.apache.gobblin.example.simplejson.SimpleJsonConverter
+extract.namespace=org.apache.gobblin.example.simplejson
+
+# source configuration properties
+# comma-separated list of file URIs (supporting different schemes, e.g., file://, ftp://, sftp://, http://, etc)
+source.filebased.files.to.pull=
+# whether to use authentication or not (default is false)
+source.conn.use.authentication=
+# credential for authentication purpose (optional)
+source.conn.domain=
+source.conn.username=
+source.conn.password=
+# source data schema
+source.schema={"namespace":"example.avro", "type":"record", "name":"User", "fields":[{"name":"name", "type":"string"}, {"name":"favorite_number",  "type":"int"}, {"name":"favorite_color", "type":"string"}]}
+
+# quality checker configuration properties
+qualitychecker.task.policies=org.apache.gobblin.policies.count.RowCountPolicy,org.apache.gobblin.policies.schema.SchemaCompatibilityPolicy
+qualitychecker.task.policy.types=OPTIONAL,OPTIONAL
+qualitychecker.row.policies=org.apache.gobblin.policies.schema.SchemaRowCheckPolicy
+qualitychecker.row.policy.types=OPTIONAL
+qualitychecker.row.err.file=test/jobOutput
+
+# data publisher class to be used
+data.publisher.type=org.apache.gobblin.publisher.BaseDataPublisher
+
+# writer configuration properties
+writer.destination.type=HDFS
+writer.output.format=AVRO
